@@ -134,6 +134,10 @@ body {
   margin: 20px;
   contain: paint;
 }
+#details_view .icon {
+  width: 60px;
+  height: 60px;
+}
 .name {
   font-family: Arial;
   font-size: 12pt;
@@ -184,33 +188,158 @@ body {
   left: 15px;
   background: url("resources/back.png");
 }
+#backdrop {
+  page-transition-tag: backdrop;
+  contain: paint;
+}
+
+#details_view:not(.hidden) #details_view_icon {
+  page-transition-tag: avatar-icon;
+  contain: paint;
+}
+
+#details_view:not(.hidden) .details_name {
+  page-transition-tag: avatar-name;
+  contain: paint;
+}
+
+@keyframes slide-to-left {
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-to-right {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-75%);
+  }
+}
+
+@keyframes slide-to-top {
+  to {
+    opacity: 0;
+    transform: translateY(-75%);
+  }
+}
+
+::page-transition-incoming-image(root)
+{
+  animation: 500ms ease-in-out both slide-from-right;
+}
+
+::page-transition-outgoing-image(root)
+{
+  animation: 500ms ease-in-out both slide-to-left;
+}
+
+.back-traversal::page-transition-incoming-image(root)
+{
+  animation: 500ms ease-in-out both slide-from-left;
+}
+
+.back-traversal::page-transition-outgoing-image(root)
+{
+  animation: 500ms ease-in-out both slide-to-right;
+}
+
+::page-transition-container(avatar-name),
+::page-transition-container(avatar-icon)
+{
+  z-index: 10;
+}
+
+::page-transition-incoming-image(avatar-name),
+::page-transition-incoming-image(avatar-icon)
+{
+  animation-duration: 500ms;
+}
+
+::page-transition-outgoing-image(avatar-name),
+::page-transition-outgoing-image(avatar-icon)
+{
+  animation-duration: 500ms;
+}
+
+::page-transition-container(avatar-name),
+::page-transition-container(avatar-icon)
+ {
+   z-index: 10;
+ }
+
+::page-transition-incoming-image(avatar-name),
+::page-transition-incoming-image(avatar-icon)
+{
+  animation-duration: 500ms;
+}
+
+::page-transition-outgoing-image(avatar-name),
+::page-transition-outgoing-image(avatar-icon)
+{
+  animation-duration: 500ms;
+}
+
+::page-transition-incoming-image(backdrop)
+{
+  animation: 500ms ease-in-out both slide-from-top;
+}
+
+::page-transition-outgoing-image(backdrop)
+{
+  animation: 500ms ease-in-out both slide-to-top;
+}
+
 </style>
-
-<div id=list_view>
-  <div class=header>
-    <div class=hotdog_menu></div>
-    <div class=heading>All Contacts</div>
-    <div class=step_menu></div>
-  </div>
-  <div class="row placeholder"></div>
-  <div id=contacts>
-  </div>
-</div>
-
-<div id=details_view class=hidden>
-  <div id=backdrop>
-    <div id=back_button></div>
-    <div class=row>
-      <img class=icon src=""></img>
-      <div class=details_name>
-        <span class=first_name></span>
-        <span class=last_name></span>
-      </div>
+<body>
+  <div id=list_view>
+    <div class=header>
+      <div class=hotdog_menu></div>
+      <div class=heading>All Contacts</div>
+      <div class=step_menu></div>
+    </div>
+    <div class="row placeholder"></div>
+    <div id=contacts>
     </div>
   </div>
-  <div id=contact_details>
+  
+  <div id=details_view class=hidden>
+    <div id=backdrop>
+      <div id=back_button></div>
+      <div class=row>
+        <img class=icon id="details_view_icon" src="" />
+        <div class=details_name>
+          <span class=first_name></span>
+          <span class=last_name></span>
+        </div>
+      </div>
+    </div>
+    <div id=contact_details>
+    </div>
   </div>
-</div>
+</body>
+
 
 <script>
 function constructList() {
@@ -219,7 +348,7 @@ function constructList() {
     e.classList.add("row");
     e.id = "e" + i;
     e.innerHTML = `
-      <img class=icon src="${data[i].icon}"></img>
+      <img class=icon src="${data[i].icon}" />
       <div class=name>
         <span class=first_name>${data[i].first_name}</span>
         <span class=last_name>${data[i].last_name}</span>
@@ -229,25 +358,15 @@ function constructList() {
 }
 
 async function showList() {
-  if (document.documentTransition) {
-    await document.documentTransition.prepare({
-      rootTransition: "reveal-down"
-    });
-  }
-
   details_view.classList.add("hidden");
   list_view.classList.remove("hidden");
-
-  if (document.documentTransition) {
-    await document.documentTransition.start();
-  }
 }
 
 function appendRow(e, src, info) {
   const row = document.createElement("div");
   row.classList.add("row");
   row.innerHTML = `
-    <img class=icon src="${src}"></img>
+    <img class=icon src="${src}" />
     <div class=name>${info}</div>
   `;
   e.appendChild(row);
@@ -267,40 +386,47 @@ function constructDetails(i) {
 }
 
 async function showDetails(i) {
-  if (document.documentTransition) {
-    const row = document.getElementById("e" + i);
-    await document.documentTransition.prepare({
-      rootTransition: "cover-up",
-      sharedElements: [
-        row.querySelector(".icon"),
-        row.querySelector(".name"),
-        null
-      ]
-    });
-  }
-
-  details_view.classList.remove("hidden");
   list_view.classList.add("hidden");
+  details_view.classList.remove("hidden");
   constructDetails(i);
-
-  if (document.documentTransition) {
-
-    await document.documentTransition.start({
-      sharedElements: [
-        backdrop.querySelector(".icon"),
-        backdrop.querySelector(".details_name"),
-        backdrop
-      ]
-    });
-  }
 }
 
+
 function registerClickHandlers() {
+  let clickedIconElement = undefined;
+  let clickedNameElement = undefined;
+  
   for (let i = 0; i < data.length; ++i) {
     const e = document.getElementById("e" + i);
-    e.addEventListener("click", () => showDetails(i));
+    e.addEventListener("click", async () => {
+      if(!document.createDocumentTransition) {
+        showDetails(i);
+        return;
+      }
+      clickedIconElement = e.querySelector("img.icon");
+      clickedNameElement = e.querySelector(".name");
+      clickedIconElement.style.pageTransitionTag = 'avatar-icon';
+      clickedNameElement.style.pageTransitionTag = 'avatar-name';
+      const transition = document.createDocumentTransition();
+      await transition.start(() => showDetails(i));
+      clickedIconElement.style.pageTransitionTag = '';
+      clickedNameElement.style.pageTransitionTag = '';
+    });
   }
-  back_button.addEventListener("click", () => showList());
+  back_button.addEventListener("click", async() => {
+    if(!document.createDocumentTransition) {
+        showList();
+        return;
+      }
+      document.documentElement.classList.add('back-traversal');
+      clickedIconElement.style.pageTransitionTag = 'avatar-icon';
+      clickedNameElement.style.pageTransitionTag = 'avatar-name';
+      const transition = document.createDocumentTransition();
+      await transition.start(() => showList());
+      document.documentElement.classList.remove('back-traversal');
+      clickedIconElement.style.pageTransitionTag = '';
+      clickedNameElement.style.pageTransitionTag = '';
+  });
 }
 
 function init() {
